@@ -9,11 +9,10 @@ struct CameraMarker;
 
 pub fn setup_camera(mut commands: Commands) {
     commands.spawn((
-        Camera2dBundle::default(),
-        PixelZoom::FitSize {
-            width: 320,
-            height: 180,
+        Camera2dBundle {
+            ..default()
         },
+        PixelZoom::Fixed(4),
         PixelViewport,
     ));
 }

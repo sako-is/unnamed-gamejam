@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.13"
 bevy_pixel_camera = "0.13.0"
+bevy_cursor = "0.3.0"
 
 [profile.dev]
 opt-level = 1

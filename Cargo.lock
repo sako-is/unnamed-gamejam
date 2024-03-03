@@ -445,6 +445,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_cursor"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7026a6db0ec401c949d0c25e8d8c60597e79f2b43b9f375576c8274468cae285"
+dependencies = [
+ "bevy",
+ "smallvec",
+]
+
+[[package]]
 name = "bevy_derive"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1762,6 +1772,7 @@ name = "gamejam"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_cursor",
  "bevy_pixel_camera",
 ]
 

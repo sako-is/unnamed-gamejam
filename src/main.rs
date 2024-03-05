@@ -23,7 +23,7 @@ fn main() {
                     }))
         .add_plugins(TrackCursorPlugin)
         .add_plugins(PixelCameraPlugin)
-        .add_systems(Startup, camera::setup_camera.before(game::movement::player_movement))
+        .add_systems(Startup, camera::setup_camera)
         .add_plugins(game::GamePlugin)
         .run();
 }

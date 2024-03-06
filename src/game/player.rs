@@ -46,7 +46,7 @@ pub fn spawn_player(mut commands: Commands,
         ..Default::default()
     },
     PlayerController {
-        speed: 50.,
+        speed: 100.,
         facing: FacingPosition::Back
     },
     animation_indices,

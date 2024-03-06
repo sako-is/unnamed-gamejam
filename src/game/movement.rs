@@ -1,34 +1,33 @@
 use bevy::prelude::*;
-use bevy_cursor::prelude::*;
 
 use crate::game::player::*;
 use crate::game::animation::*;
 
-const OFFSET: f32 = 1.0;
+const OFFSET: f32 = 0.5;
 
 pub fn player_movement(
     mut player: Query<(&mut Transform, 
                        &mut PlayerController, 
                        &mut TextureAtlas, 
-                       &mut Handle<Image>, 
-                       &mut Sprite), 
+                       &mut Handle<Image>,
+                       &mut Sprite,
+                       &mut AnimationIndices), 
                 With<Player>>,
     mut camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
     kbd_input: Res<ButtonInput<KeyCode>>,
-    cursor: Res<CursorLocation>,
+    mut cursor_evr: EventReader<CursorMoved>,
     time: Res<Time>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>
+
 ) {
-    let Ok((mut transform, mut controller, mut atlas, mut image, mut sprite)) = 
+    let Ok((mut transform, mut controller, mut atlas, mut image, mut sprite, mut indices)) = 
                         player.get_single_mut() else { panic!("Controller not found") };
     let Ok(mut camera_transform) = camera.get_single_mut() else {
                                             panic!("Camera not found") };
     
     let old_facing = &controller.facing.clone();
     
-    let Some(position) = cursor.position() else { return; };
-
     if kbd_input.pressed(KeyCode::KeyW) {
         transform.translation.y += controller.speed * time.delta_seconds();
         camera_transform.translation.y += controller.speed * time.delta_seconds();
@@ -53,88 +52,75 @@ pub fn player_movement(
         controller.facing = FacingPosition::Right;
     }
    
-
-    if (position.x > transform.translation.x) 
-    && (position.y < transform.translation.y + OFFSET) 
-    && (position.y > transform.translation.y - OFFSET) {
-        controller.facing = FacingPosition::Back;
-
-    } else if (position.x < transform.translation.x)
-    && (position.y < transform.translation.y + OFFSET)
-    && (position.y > transform.translation.y - OFFSET) {
-        controller.facing = FacingPosition::Front;
-    } else if position.y > transform.translation.y + OFFSET {
-        controller.facing = FacingPosition::Right;
-    } else if position.y < transform.translation.y - OFFSET {
-        controller.facing = FacingPosition::Left;
+    for ev in cursor_evr.read() {
+        if (ev.position.y > transform.translation.y) 
+        && (ev.position.x < transform.translation.x + OFFSET) 
+        && (ev.position.x > transform.translation.x - OFFSET) {
+            controller.facing = FacingPosition::Back;
+        } else if (ev.position.y < transform.translation.y)
+        && (ev.position.x < transform.translation.x + OFFSET * (ev.position.y - transform.translation.y))
+        && (ev.position.x > transform.translation.x - OFFSET * (transform.translation.y - ev.position.y)) {
+            controller.facing = FacingPosition::Front;
+        } else if ev.position.x > transform.translation.x + OFFSET * (ev.position.y - transform.translation.y){
+            controller.facing = FacingPosition::Right;
+        } else if ev.position.x < transform.translation.x - OFFSET * (transform.translation.y - ev.position.y){
+            controller.facing = FacingPosition::Left;
+        }
     }
-    /* Set the player to show its back 
-    * if mouse position is greater than the player position
-    */
 
+    /* Set the player to show its back 
+    * if mouse ev.position is greater than the player ev.position
+    */
     if *old_facing != controller.facing {
         return;
     }
 
-    if (*old_facing == FacingPosition::Left || *old_facing == FacingPosition::Right)
-        && (controller.facing == FacingPosition::Left 
-        || controller.facing == FacingPosition::Right) {
-            sprite.flip_x = !sprite.flip_x;
-    } else if controller.facing == FacingPosition::Left {
-        let animation_indices = AnimationIndices { 
-            first: 0, 
-            last: 4 
-        };
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(64.0, 64.0), 
-            5, 1, None, None);
-        *image = asset_server.load("character/left_idle.png");
-        *atlas = TextureAtlas {
-            layout: texture_atlas_layouts.add(layout),
-            index: animation_indices.first 
-        }
-    } else if controller.facing == FacingPosition::Right {
-        let animation_indices = AnimationIndices { 
-            first: 0, 
-            last: 4 
-        };
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(64.0, 64.0), 
-            5, 1, None, None);
-        *image = asset_server.load("character/right_idle.png");
-        *atlas = TextureAtlas {
-            layout: texture_atlas_layouts.add(layout),
-            index: animation_indices.first
-        }
+    if controller.facing == FacingPosition::Left {
+        load_side(&mut image, &mut atlas, &mut indices, 
+                  &mut sprite, "character/right_idle.png".to_string(), 
+                  5, true, &asset_server, &mut texture_atlas_layouts);
     }
-
+    if controller.facing == FacingPosition::Right {
+        load_side(&mut image, &mut atlas, &mut indices, 
+                  &mut sprite, "character/right_idle.png".to_string(), 
+                  5, false, &asset_server, &mut texture_atlas_layouts);
+    }
     if controller.facing == FacingPosition::Front {
-        let animation_indices = AnimationIndices { 
-            first: 0, 
-            last: 4 
-        };
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(64.0, 64.0), 
-            5, 1, None, None);
-        *image = asset_server.load("character/front_idle.png");
-        *atlas = TextureAtlas {
-            layout: texture_atlas_layouts.add(layout),
-            index: animation_indices.first
-        }
+        load_side(&mut image, &mut atlas, &mut indices, 
+                  &mut sprite, "character/front_idle.png".to_string(), 
+                  5, false, &asset_server, &mut texture_atlas_layouts);
     }
-
     if controller.facing == FacingPosition::Back {
-        let animation_indices = AnimationIndices { 
-            first: 0, 
-            last: 11 
-        };
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(64.0, 64.0), 
-            12, 1, None, None);
-        *image = asset_server.load("character/back.png");
-        *atlas = TextureAtlas {
-            layout: texture_atlas_layouts.add(layout),
-            index: animation_indices.first
-        }
+        load_side(&mut image, &mut atlas, &mut indices, 
+                  &mut sprite, "character/back.png".to_string(), 
+                  12, false, &asset_server, &mut texture_atlas_layouts);
     }
+}
+
+pub fn load_side(
+    image: &mut Handle<Image>, 
+    atlas: &mut TextureAtlas, 
+    indices: &mut AnimationIndices,
+    sprite: &mut Sprite,
+    filename: String,
+    frames: usize,
+    flip: bool,
+    asset_server: &Res<AssetServer>,
+    mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>
+) {
+    *image = asset_server.load(filename);
+    let layout = TextureAtlasLayout::from_grid(
+                Vec2::new(64.0, 64.0), 
+                frames, 1, None, None);
+    
+    *indices = AnimationIndices { 
+        first: 0, 
+        last: frames - 1
+    };
+
+    *atlas = TextureAtlas {
+        layout: texture_atlas_layouts.add(layout),
+        index: indices.first
+    };
+    sprite.flip_x = flip;
 }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::*;
 use bevy_pixel_camera::PixelCameraPlugin;
-use bevy_cursor::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 mod camera;
 mod game;
@@ -21,8 +21,8 @@ fn main() {
                         }),
                         ..default()
                     }))
-        .add_plugins(TrackCursorPlugin)
         .add_plugins(PixelCameraPlugin)
+        .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, camera::setup_camera)
         .add_plugins(game::GamePlugin)
         .run();
